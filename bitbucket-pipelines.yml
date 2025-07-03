@@ -38,13 +38,15 @@ definitions:
           - golangci-lint run -v
     - step: &replicate-to-github
         name: Replicate main branch to GitHub
+        image: python:3.7
         script:
+          - pip install git-filter-repo
           - git fetch --unshallow --all && git checkout main && git pull
           - git remote rename origin bitbucket
           - git remote add github git@github.com:atlassian/terraform-provider-atlassian-operations.git
-          - git pull --rebase
           - git checkout -b release-from-bitbucket
           - git pull --rebase --strategy-option=ours github main
+          - git filter-repo --commit-callback 'commit.committer_name = commit.author_name; commit.committer_email = commit.author_email;' --refs $(git merge-base github/main release-from-bitbucket)...HEAD --force
           - git push --set-upstream github release-from-bitbucket --force
 
 pipelines:
