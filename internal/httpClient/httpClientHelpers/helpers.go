@@ -33,6 +33,16 @@ func GenerateTeamsClientRequest(providerModel dto.AtlassianOpsProviderModel) *ht
 	return req
 }
 
+func GenerateServiceClientRequest(providerModel dto.AtlassianOpsProviderModel) *httpClient.Request {
+	req := httpClient.NewRequest()
+	req.SetUrl(fmt.Sprintf("%s/jsm/api/%s", getAtlassianApiDomain(providerModel.GetIsStaging()), providerModel.GetCloudId()))
+	req.SetRetryCount(providerModel.GetApiRetryCount())
+	req.SetRetryWaitTime(providerModel.GetApiRetryWait())
+	req.SetRetryMaxWaitTime(providerModel.GetApiRetryWaitMax())
+	req.SetBasicAuth(providerModel.GetEmailAddress(), providerModel.GetToken())
+	return req
+}
+
 func GenerateUserClientRequest(providerModel dto.AtlassianOpsProviderModel) *httpClient.Request {
 	req := httpClient.NewRequest()
 	switch providerModel.GetProductType() {

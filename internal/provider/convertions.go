@@ -6,6 +6,8 @@ import (
 	"errors"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 
+	"strings"
+
 	"github.com/atlassian/terraform-provider-atlassian-operations/internal/dto"
 	"github.com/atlassian/terraform-provider-atlassian-operations/internal/provider/dataModels"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -13,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"strings"
 )
 
 func ResponderInfoDtoToModel(dto dto.ResponderInfo) dataModels.ResponderInfoModel {
@@ -2521,5 +2522,239 @@ func MaintenanceDtoToModel(ctx context.Context, dtoObj *dto.MaintenanceDto) (*da
 		EndDate:     types.StringValue(dtoObj.EndDate),
 		TeamID:      teamId,
 		Rules:       rulesList,
+	}, diags
+}
+
+func ServiceModelToDto(ctx context.Context, model *dataModels.ServiceModel, cloudId string) (*dto.ServiceDto, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if model == nil {
+		return nil, diags
+	}
+
+	// Owner is already a string (team ID)
+	owner := model.Owner.ValueString()
+
+	// Convert change approvers
+	var changeApprovers *dto.ChangeApproversDto
+	if !(model.ChangeApprovers.IsNull() || model.ChangeApprovers.IsUnknown()) {
+		var changeApproversModel dataModels.ChangeApproversModel
+		diags.Append(model.ChangeApprovers.As(ctx, &changeApproversModel, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		var groups []string
+		if !(changeApproversModel.Groups.IsNull() || changeApproversModel.Groups.IsUnknown()) {
+			diags.Append(changeApproversModel.Groups.ElementsAs(ctx, &groups, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+
+		if len(groups) > 0 {
+			changeApprovers = &dto.ChangeApproversDto{
+				Groups: groups,
+			}
+		}
+	}
+
+	// Convert responders
+	var responders *dto.RespondersDto
+	if !(model.Responders.IsNull() || model.Responders.IsUnknown()) {
+		var respondersModel dataModels.RespondersModel
+		diags.Append(model.Responders.As(ctx, &respondersModel, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		var users []string
+		var teams []string
+
+		if !(respondersModel.Users.IsNull() || respondersModel.Users.IsUnknown()) {
+			diags.Append(respondersModel.Users.ElementsAs(ctx, &users, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+
+		if !(respondersModel.Teams.IsNull() || respondersModel.Teams.IsUnknown()) {
+			diags.Append(respondersModel.Teams.ElementsAs(ctx, &teams, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+
+		if len(users) > 0 || len(teams) > 0 {
+			responders = &dto.RespondersDto{
+				Users: users,
+				Teams: teams,
+			}
+		}
+	}
+
+	// Convert stakeholders
+	var stakeholders *dto.StakeholdersDto
+	if !(model.Stakeholders.IsNull() || model.Stakeholders.IsUnknown()) {
+		var stakeholdersModel dataModels.StakeholdersModel
+		diags.Append(model.Stakeholders.As(ctx, &stakeholdersModel, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		var users []string
+		if !(stakeholdersModel.Users.IsNull() || stakeholdersModel.Users.IsUnknown()) {
+			diags.Append(stakeholdersModel.Users.ElementsAs(ctx, &users, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+
+		if len(users) > 0 {
+			stakeholders = &dto.StakeholdersDto{
+				Users: users,
+			}
+		}
+	}
+
+	// Convert projects
+	var projects *dto.ProjectsDto
+	if !(model.Projects.IsNull() || model.Projects.IsUnknown()) {
+		var projectsModel dataModels.ProjectsModel
+		diags.Append(model.Projects.As(ctx, &projectsModel, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		var ids []string
+		if !(projectsModel.IDs.IsNull() || projectsModel.IDs.IsUnknown()) {
+			diags.Append(projectsModel.IDs.ElementsAs(ctx, &ids, false)...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+
+		if len(ids) > 0 {
+			projects = &dto.ProjectsDto{
+				IDs: ids,
+			}
+		}
+	}
+
+	return &dto.ServiceDto{
+		ID:              model.ID.ValueString(),
+		Name:            model.Name.ValueString(),
+		Description:     model.Description.ValueString(),
+		Tier:            model.Tier.ValueInt32(),
+		Type:            model.Type.ValueString(),
+		Owner:           owner,
+		ChangeApprovers: changeApprovers,
+		Responders:      responders,
+		Stakeholders:    stakeholders,
+		Projects:        projects,
+	}, diags
+}
+
+func ServiceDtoToModel(ctx context.Context, dto *dto.ServiceDto) (*dataModels.ServiceModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if dto == nil {
+		return nil, diags
+	}
+
+	// Owner is already a string (team ID)
+	owner := types.StringValue(dto.Owner)
+
+	// Convert change approvers
+	var changeApprovers types.Object
+	if dto.ChangeApprovers != nil && len(dto.ChangeApprovers.Groups) > 0 {
+		groups := make([]attr.Value, 0, len(dto.ChangeApprovers.Groups))
+		for _, group := range dto.ChangeApprovers.Groups {
+			groups = append(groups, types.StringValue(group))
+		}
+		groupsList := types.ListValueMust(types.StringType, groups)
+		changeApprovers = types.ObjectValueMust(
+			dataModels.ChangeApproversModelMap,
+			map[string]attr.Value{
+				"groups": groupsList,
+			},
+		)
+	} else {
+		changeApprovers = types.ObjectNull(dataModels.ChangeApproversModelMap)
+	}
+
+	// Convert responders
+	var responders types.Object
+	if dto.Responders != nil && (len(dto.Responders.Users) > 0 || len(dto.Responders.Teams) > 0) {
+		users := make([]attr.Value, 0, len(dto.Responders.Users))
+		for _, user := range dto.Responders.Users {
+			users = append(users, types.StringValue(user))
+		}
+		usersList := types.ListValueMust(types.StringType, users)
+
+		teams := make([]attr.Value, 0, len(dto.Responders.Teams))
+		for _, team := range dto.Responders.Teams {
+			teams = append(teams, types.StringValue(team))
+		}
+		teamsList := types.ListValueMust(types.StringType, teams)
+
+		responders = types.ObjectValueMust(
+			dataModels.RespondersModelMap,
+			map[string]attr.Value{
+				"users": usersList,
+				"teams": teamsList,
+			},
+		)
+	} else {
+		responders = types.ObjectNull(dataModels.RespondersModelMap)
+	}
+
+	// Convert stakeholders
+	var stakeholders types.Object
+	if dto.Stakeholders != nil && len(dto.Stakeholders.Users) > 0 {
+		users := make([]attr.Value, 0, len(dto.Stakeholders.Users))
+		for _, user := range dto.Stakeholders.Users {
+			users = append(users, types.StringValue(user))
+		}
+		usersList := types.ListValueMust(types.StringType, users)
+		stakeholders = types.ObjectValueMust(
+			dataModels.StakeholdersModelMap,
+			map[string]attr.Value{
+				"users": usersList,
+			},
+		)
+	} else {
+		stakeholders = types.ObjectNull(dataModels.StakeholdersModelMap)
+	}
+
+	// Convert projects
+	var projects types.Object
+	if dto.Projects != nil && len(dto.Projects.IDs) > 0 {
+		ids := make([]attr.Value, 0, len(dto.Projects.IDs))
+		for _, id := range dto.Projects.IDs {
+			ids = append(ids, types.StringValue(id))
+		}
+		idsList := types.ListValueMust(types.StringType, ids)
+		projects = types.ObjectValueMust(
+			dataModels.ProjectsModelMap,
+			map[string]attr.Value{
+				"ids": idsList,
+			},
+		)
+	} else {
+		projects = types.ObjectNull(dataModels.ProjectsModelMap)
+	}
+
+	return &dataModels.ServiceModel{
+		ID:              types.StringValue(dto.ID),
+		Name:            types.StringValue(dto.Name),
+		Description:     types.StringValue(dto.Description),
+		Tier:            types.Int32Value(dto.Tier),
+		Type:            types.StringValue(dto.Type),
+		Owner:           owner,
+		ChangeApprovers: changeApprovers,
+		Responders:      responders,
+		Stakeholders:    stakeholders,
+		Projects:        projects,
 	}, diags
 }
