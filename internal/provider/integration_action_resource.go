@@ -142,6 +142,12 @@ func (r *IntegrationActionResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
+
+		return
+	}
+
 	if httpResp.IsError() {
 		statusCode := httpResp.GetStatusCode()
 		errorResponse := httpResp.GetErrorBody()

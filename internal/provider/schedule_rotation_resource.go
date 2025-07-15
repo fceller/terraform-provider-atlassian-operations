@@ -170,6 +170,10 @@ func (r *ScheduleRotationResource) Read(ctx context.Context, req resource.ReadRe
 	if httpResp == nil {
 		tflog.Error(ctx, "Client Error. Unable to read rotation, got nil response")
 		resp.Diagnostics.AddError("Client Error", "Unable to read rotation, got nil response")
+	} else if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
+
+		return
 	} else if httpResp.IsError() {
 		statusCode := httpResp.GetStatusCode()
 		errorResponse := httpResp.GetErrorBody()

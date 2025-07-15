@@ -133,6 +133,10 @@ func (r *EscalationResource) Read(ctx context.Context, req resource.ReadRequest,
 	if httpResp == nil {
 		tflog.Error(ctx, "Client Error. Unable to read escalation, got nil response")
 		resp.Diagnostics.AddError("Client Error", "Unable to read escalation, got nil response")
+	} else if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
+
+		return
 	} else if httpResp.IsError() {
 		statusCode := httpResp.GetStatusCode()
 		errorResponse := httpResp.GetErrorBody()

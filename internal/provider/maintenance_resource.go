@@ -160,7 +160,11 @@ func (r *MaintenanceResource) Read(ctx context.Context, req resource.ReadRequest
 		resp.Diagnostics.AddError("Client Error", "Unable to read maintenance window, got nil response")
 		return
 	}
+	if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
 
+		return
+	}
 	if httpResp.IsError() {
 		statusCode := httpResp.GetStatusCode()
 		if statusCode == 404 {

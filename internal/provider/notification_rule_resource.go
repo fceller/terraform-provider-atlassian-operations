@@ -136,6 +136,11 @@ func (r *NotificationRuleResource) Read(ctx context.Context, req resource.ReadRe
 		resp.Diagnostics.AddError("Client Error", "Unable to read notification rule, got nil response")
 		return
 	}
+	if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
+
+		return
+	}
 
 	if httpResp.IsError() {
 		statusCode := httpResp.GetStatusCode()

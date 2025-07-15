@@ -96,6 +96,14 @@ func (r *RoutingRuleResource) Read(ctx context.Context, req resource.ReadRequest
 		SetBodyParseObject(&ruleDto).
 		Send()
 
+	if httpResp == nil {
+		tflog.Error(ctx, "Client Error. Unable to read routing rule, got nil response")
+		resp.Diagnostics.AddError("Client Error", "Unable to read routing rule, got nil response")
+	} else if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
+
+		return
+	}
 	handleHttpResponse(httpResp, err, "read routing rule", &resp.Diagnostics, ctx)
 
 	// Update state
