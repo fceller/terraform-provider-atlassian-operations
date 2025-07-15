@@ -728,6 +728,7 @@ func ApiIntegrationDtoToModel(dtoObj dto.ApiIntegration, oldModel dataModels.Api
 		Directions:             types.ListNull(types.StringType),
 		Domains:                types.ListNull(types.StringType),
 		TypeSpecificProperties: jsontypes.NewExactValue(string(typeSpecificProperties)),
+		DeleteDefaultActions:   oldModel.DeleteDefaultActions,
 	}
 
 	if dtoObj.ApiKey != "" {
