@@ -320,7 +320,7 @@ func getAlertPolicyOrder(ctx context.Context, configuration dto.AtlassianOpsProv
 
 		if httpResp == nil {
 			tflog.Error(ctx, "Client Error. Unable to list alert policies, got nil response")
-			return 0.0
+			return 0
 		}
 		if httpResp.IsError() {
 			statusCode := httpResp.GetStatusCode()
@@ -330,11 +330,11 @@ func getAlertPolicyOrder(ctx context.Context, configuration dto.AtlassianOpsProv
 			} else {
 				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list alert policies, got http response: %d", statusCode))
 			}
-			return 0.0
+			return 0
 		}
 		if err != nil {
 			tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list alert policies, got error: %s", err))
-			return 0.0
+			return 0
 		}
 
 		for _, policy := range listAlertPoliciesResponse.Values {
@@ -351,7 +351,7 @@ func getAlertPolicyOrder(ctx context.Context, configuration dto.AtlassianOpsProv
 			parsedURL, err := url.Parse(nextURL)
 			if err != nil {
 				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to parse next URL, got error: %s", err))
-				return 0.0
+				return 0
 			}
 			urlValues := parsedURL.Query()
 			queryParams = make(map[string]string)
