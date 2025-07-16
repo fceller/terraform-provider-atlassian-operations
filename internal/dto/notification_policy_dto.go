@@ -74,3 +74,16 @@ type NotificationConditionDto struct {
 	ExpectedValue string `json:"expectedValue"`
 	Order         int    `json:"order,omitempty"`
 }
+
+type BaseNotificationPolicyDto struct {
+	ID      string  `json:"id,omitempty"`
+	Type    string  `json:"type"`
+	Name    string  `json:"name"`
+	Enabled bool    `json:"enabled"`
+	Order   float64 `json:"order,omitempty"`
+}
+
+type NotificationPolicyListDto struct {
+	Values []BaseNotificationPolicyDto `json:"values"`
+	Links  LinksDto                    `json:"links"`
+}

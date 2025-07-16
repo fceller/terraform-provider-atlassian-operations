@@ -1901,7 +1901,7 @@ func NotificationPolicyModelToDto(ctx context.Context, model *dataModels.Notific
 	}, diags
 }
 
-func NotificationPolicyDtoToModel(ctx context.Context, dto *dto.NotificationPolicyDto) (*dataModels.NotificationPolicyModel, diag.Diagnostics) {
+func NotificationPolicyDtoToModel(ctx context.Context, order float64, dto *dto.NotificationPolicyDto) (*dataModels.NotificationPolicyModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if dto == nil {
@@ -2152,7 +2152,7 @@ func NotificationPolicyDtoToModel(ctx context.Context, dto *dto.NotificationPoli
 		Description:         types.StringValue(dto.Description),
 		TeamID:              types.StringValue(dto.TeamID),
 		Enabled:             types.BoolValue(dto.Enabled),
-		Order:               types.Float64Value(dto.Order),
+		Order:               types.Float64Value(order),
 		Filter:              filter,
 		TimeRestriction:     timeRestriction,
 		AutoRestartAction:   autoRestartAction,
