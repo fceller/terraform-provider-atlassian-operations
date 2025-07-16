@@ -26,6 +26,7 @@ Team data source
 
 ### Read-Only
 
+- `delete_default_resources` (Boolean) Set to true to remove default escalation and schedule for newly created team. Be careful its also changes that team routing rule to None. That means you have to define routing rule as well. Defaults to false.
 - `description` (String) A detailed description of the team's purpose, responsibilities, and scope of operations.
 - `display_name` (String) The human-readable name of the team as it appears in the Atlassian interface.
 - `member` (Attributes Set) The set of users who are members of this team. Each member has their own role and permissions. (see [below for nested schema](#nestedatt--member))

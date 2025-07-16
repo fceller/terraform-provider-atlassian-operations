@@ -22,6 +22,7 @@ description: |-
 
 ### Optional
 
+- `delete_default_actions` (Boolean) Set to true to remove default actions for this API integration. This is useful for custom integrations where default actions are not applicable. Defaults to false.
 - `enabled` (Boolean) Whether the API integration is enabled. When disabled, the integration will not process any requests. Defaults to false.
 - `team_id` (String) The ID of the team that owns this API integration. Cannot be changed after creation.
 - `type_specific_properties` (String) JSON object containing integration-specific configuration properties. The schema depends on the integration type.
