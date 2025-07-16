@@ -108,7 +108,7 @@ func (r *NotificationPolicyResource) Create(ctx context.Context, req resource.Cr
 	}
 
 	// list notification policies find the one we just created, and get its order value
-	order := listNotificationPoliciesFoundTheCurrentOneForOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
+	order := getNotificationPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
 
 	// Update state with response
 	result, _ := NotificationPolicyDtoToModel(ctx, order, notificationPolicyDto)
@@ -163,7 +163,7 @@ func (r *NotificationPolicyResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	order := listNotificationPoliciesFoundTheCurrentOneForOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
+	order := getNotificationPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
 
 	result, _ := NotificationPolicyDtoToModel(ctx, order, &notificationPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
@@ -213,7 +213,7 @@ func (r *NotificationPolicyResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	order := listNotificationPoliciesFoundTheCurrentOneForOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
+	order := getNotificationPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
 	result, _ := NotificationPolicyDtoToModel(ctx, order, notificationPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
@@ -270,7 +270,7 @@ func (r *NotificationPolicyResource) ImportState(ctx context.Context, req resour
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("team_id"), idParts[1])...)
 }
 
-func listNotificationPoliciesFoundTheCurrentOneForOrder(ctx context.Context, configuration dto.AtlassianOpsProviderModel, teamId string, notificationPolicyId string) float64 {
+func getNotificationPolicyOrder(ctx context.Context, configuration dto.AtlassianOpsProviderModel, teamId string, notificationPolicyId string) float64 {
 	// list notification policies find the one we just created, and get its order value
 	listNotificationPoliciesDto := &dto.NotificationPolicyListDto{}
 	baseURL := fmt.Sprintf("/v1/teams/%s/policies", teamId)

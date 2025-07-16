@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/atlassian/terraform-provider-atlassian-operations/internal/dto"
@@ -113,8 +114,9 @@ func (r *AlertPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	order := getAlertPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), alertPolicyDto.ID)
 	// Update state with response
-	result, _ := AlertPolicyDtoToModel(ctx, alertPolicyDto)
+	result, _ := AlertPolicyDtoToModel(ctx, order, alertPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
 
@@ -174,7 +176,9 @@ func (r *AlertPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	result, _ := AlertPolicyDtoToModel(ctx, &alertPolicyDto)
+	order := getAlertPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), alertPolicyDto.ID)
+
+	result, _ := AlertPolicyDtoToModel(ctx, order, &alertPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
 
@@ -228,8 +232,8 @@ func (r *AlertPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update alert policy, got error: %s", err))
 		return
 	}
-
-	result, _ := AlertPolicyDtoToModel(ctx, alertPolicyDto)
+	order := getAlertPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), alertPolicyDto.ID)
+	result, _ := AlertPolicyDtoToModel(ctx, order, alertPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
 
@@ -292,4 +296,73 @@ func (r *AlertPolicyResource) ImportState(ctx context.Context, req resource.Impo
 	if len(idParts) == 2 {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("team_id"), idParts[1])...)
 	}
+}
+
+func getAlertPolicyOrder(ctx context.Context, configuration dto.AtlassianOpsProviderModel, teamId string, alertPolicyId string) int64 {
+	// list alert policies find the one we just created, and get its order value
+	listAlertPoliciesResponse := &dto.AlertPolicyListDto{}
+	baseURL := fmt.Sprintf("/v1/teams/%s/policies", teamId)
+	queryParams := map[string]string{
+		"type": "alert",
+	}
+	var order int64
+	doneLooping := false
+
+	for !doneLooping {
+		req := httpClientHelpers.
+			GenerateJsmOpsClientRequest(configuration).
+			JoinBaseUrl(baseURL).
+			Method(httpClient.GET).
+			SetBodyParseObject(&listAlertPoliciesResponse).
+			SetQueryParams(queryParams)
+
+		httpResp, err := req.Send()
+
+		if httpResp == nil {
+			tflog.Error(ctx, "Client Error. Unable to list alert policies, got nil response")
+			return 0.0
+		}
+		if httpResp.IsError() {
+			statusCode := httpResp.GetStatusCode()
+			errorResponse := httpResp.GetErrorBody()
+			if errorResponse != nil {
+				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list alert policies, status code: %d. Got response: %s", statusCode, *errorResponse))
+			} else {
+				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list alert policies, got http response: %d", statusCode))
+			}
+			return 0.0
+		}
+		if err != nil {
+			tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list alert policies, got error: %s", err))
+			return 0.0
+		}
+
+		for _, policy := range listAlertPoliciesResponse.Values {
+			if policy.ID == alertPolicyId {
+				order = int64(policy.Order)
+				return order
+			}
+		}
+
+		if listAlertPoliciesResponse.Links.Next == "" {
+			doneLooping = true
+		} else {
+			nextURL := listAlertPoliciesResponse.Links.Next
+			parsedURL, err := url.Parse(nextURL)
+			if err != nil {
+				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to parse next URL, got error: %s", err))
+				return 0.0
+			}
+			urlValues := parsedURL.Query()
+			queryParams = make(map[string]string)
+			for key, values := range urlValues {
+				if len(values) > 0 {
+					queryParams[key] = values[0]
+				}
+			}
+			baseURL = parsedURL.Path
+			listAlertPoliciesResponse = &dto.AlertPolicyListDto{}
+		}
+	}
+	return order
 }

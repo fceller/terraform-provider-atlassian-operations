@@ -1427,7 +1427,7 @@ func AlertPolicyModelToDto(ctx context.Context, model *dataModels.AlertPolicyMod
 	return &alertPolicyDto, diags
 }
 
-func AlertPolicyDtoToModel(_ context.Context, dto *dto.AlertPolicyDto) (*dataModels.AlertPolicyModel, error) {
+func AlertPolicyDtoToModel(_ context.Context, order int64, dto *dto.AlertPolicyDto) (*dataModels.AlertPolicyModel, error) {
 
 	if dto == nil {
 		return nil, errors.New("dto can not be nil")
@@ -1629,6 +1629,7 @@ func AlertPolicyDtoToModel(_ context.Context, dto *dto.AlertPolicyDto) (*dataMod
 		Name:                   types.StringValue(dto.Name),
 		Description:            types.StringValue(dto.Description),
 		Enabled:                types.BoolValue(dto.Enabled),
+		Order:                  types.Int64Value(order),
 		Filter:                 filter,
 		TimeRestriction:        timeRestriction,
 		Alias:                  types.StringValue(dto.Alias),
