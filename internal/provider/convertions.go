@@ -728,6 +728,7 @@ func ApiIntegrationDtoToModel(dtoObj dto.ApiIntegration, oldModel dataModels.Api
 		Directions:             types.ListNull(types.StringType),
 		Domains:                types.ListNull(types.StringType),
 		TypeSpecificProperties: jsontypes.NewExactValue(string(typeSpecificProperties)),
+		DeleteDefaultActions:   oldModel.DeleteDefaultActions,
 	}
 
 	if dtoObj.ApiKey != "" {
@@ -1426,7 +1427,7 @@ func AlertPolicyModelToDto(ctx context.Context, model *dataModels.AlertPolicyMod
 	return &alertPolicyDto, diags
 }
 
-func AlertPolicyDtoToModel(_ context.Context, dto *dto.AlertPolicyDto) (*dataModels.AlertPolicyModel, error) {
+func AlertPolicyDtoToModel(_ context.Context, order int64, dto *dto.AlertPolicyDto) (*dataModels.AlertPolicyModel, error) {
 
 	if dto == nil {
 		return nil, errors.New("dto can not be nil")
@@ -1628,6 +1629,7 @@ func AlertPolicyDtoToModel(_ context.Context, dto *dto.AlertPolicyDto) (*dataMod
 		Name:                   types.StringValue(dto.Name),
 		Description:            types.StringValue(dto.Description),
 		Enabled:                types.BoolValue(dto.Enabled),
+		Order:                  types.Int64Value(order),
 		Filter:                 filter,
 		TimeRestriction:        timeRestriction,
 		Alias:                  types.StringValue(dto.Alias),
@@ -1900,7 +1902,7 @@ func NotificationPolicyModelToDto(ctx context.Context, model *dataModels.Notific
 	}, diags
 }
 
-func NotificationPolicyDtoToModel(ctx context.Context, dto *dto.NotificationPolicyDto) (*dataModels.NotificationPolicyModel, diag.Diagnostics) {
+func NotificationPolicyDtoToModel(ctx context.Context, order float64, dto *dto.NotificationPolicyDto) (*dataModels.NotificationPolicyModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if dto == nil {
@@ -2151,7 +2153,7 @@ func NotificationPolicyDtoToModel(ctx context.Context, dto *dto.NotificationPoli
 		Description:         types.StringValue(dto.Description),
 		TeamID:              types.StringValue(dto.TeamID),
 		Enabled:             types.BoolValue(dto.Enabled),
-		Order:               types.Float64Value(dto.Order),
+		Order:               types.Float64Value(order),
 		Filter:              filter,
 		TimeRestriction:     timeRestriction,
 		AutoRestartAction:   autoRestartAction,

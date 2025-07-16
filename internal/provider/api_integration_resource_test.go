@@ -85,7 +85,7 @@ resource "atlassian-operations_api_integration" "example" {
 				ResourceName:            "atlassian-operations_api_integration.example",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"type_specific_properties", "directions", "domains", "api_key"},
+				ImportStateVerifyIgnore: []string{"type_specific_properties", "directions", "domains", "api_key", "delete_default_actions"},
 			},
 			// Update and Read testing
 			{
@@ -226,7 +226,7 @@ resource "atlassian-operations_api_integration" "example" {
 				ResourceName:            "atlassian-operations_api_integration.example",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"type_specific_properties", "directions", "domains", "api_key"},
+				ImportStateVerifyIgnore: []string{"type_specific_properties", "directions", "domains", "api_key", "delete_default_actions"},
 			},
 			// Update and Read testing
 			{

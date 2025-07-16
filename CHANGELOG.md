@@ -1,3 +1,8 @@
+## v1.1.8
+
+#### Product:
+
+- Add `delete_default_actions` attribute in the API Integration resource. Fix Order attribute problem on Notification Policy and Alert Policy resources. Handle external deletion of resources by setting their state to Deleted on Read operations. This ensures that the provider can handle resources that have been deleted outside of Terraform, preventing state inconsistencies.
 ## v1.1.7
 
 #### Product:

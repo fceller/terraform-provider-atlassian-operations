@@ -56,6 +56,7 @@ resource "atlassian-operations_alert_policy" "test" {
   type        = "alert"
   enabled     = true
   message     = "Test alert message"
+  order       = 1
 
   filter = {
     type = "match-any-condition"

@@ -19,6 +19,7 @@ type (
 		Directions             types.List      `tfsdk:"directions"`
 		Domains                types.List      `tfsdk:"domains"`
 		TypeSpecificProperties jsontypes.Exact `tfsdk:"type_specific_properties"`
+		DeleteDefaultActions   types.Bool      `tfsdk:"delete_default_actions"`
 	}
 )
 
@@ -34,6 +35,7 @@ var ApiIntegrationModelMap = map[string]attr.Type{
 	"directions":               types.ListType{ElemType: types.StringType},
 	"domains":                  types.ListType{ElemType: types.StringType},
 	"type_specific_properties": jsontypes.ExactType{},
+	"delete_default_actions":   types.BoolType,
 }
 
 func (receiver *ApiIntegrationModel) AsValue() types.Object {

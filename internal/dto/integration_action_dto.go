@@ -34,3 +34,15 @@ type ActionMappingDto struct {
 	Type      string                 `json:"type"`
 	Parameter map[string]interface{} `json:"parameter,omitempty"`
 }
+
+type BaseIntegrationActionDto struct {
+	ID        string `json:"id,omitempty"`
+	Type      string `json:"type"`
+	Name      string `json:"name"`
+	Direction string `json:"direction"`
+	Domain    string `json:"domain"`
+}
+type IntegrationActionListDto struct {
+	Values []BaseIntegrationActionDto `json:"values"`
+	Links  LinksDto                   `json:"links"`
+}

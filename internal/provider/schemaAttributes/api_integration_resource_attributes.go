@@ -83,6 +83,13 @@ var ApiIntegrationResourceAttributes = map[string]schema.Attribute{
 		Computed:    true,
 		Optional:    true,
 	},
+	"delete_default_actions": schema.BoolAttribute{
+		Description: "Set to true to remove default actions for this API integration. This is useful for custom integrations where default actions are not applicable. Defaults to false.",
+		Optional:    true,
+		Required:    false,
+		Computed:    true,
+		Default:     booldefault.StaticBool(false),
+	},
 }
 
 var ApiIntegrationResourceMaintenanceSourceAttributes = map[string]schema.Attribute{

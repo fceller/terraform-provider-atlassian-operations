@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/atlassian/terraform-provider-atlassian-operations/internal/dto"
@@ -106,8 +107,11 @@ func (r *NotificationPolicyResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
+	// list notification policies find the one we just created, and get its order value
+	order := getNotificationPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
+
 	// Update state with response
-	result, _ := NotificationPolicyDtoToModel(ctx, notificationPolicyDto)
+	result, _ := NotificationPolicyDtoToModel(ctx, order, notificationPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
 
@@ -134,6 +138,12 @@ func (r *NotificationPolicyResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
+	if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
+
+		return
+	}
+
 	if httpResp.IsError() {
 		statusCode := httpResp.GetStatusCode()
 		errorResponse := httpResp.GetErrorBody()
@@ -153,7 +163,9 @@ func (r *NotificationPolicyResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	result, _ := NotificationPolicyDtoToModel(ctx, &notificationPolicyDto)
+	order := getNotificationPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
+
+	result, _ := NotificationPolicyDtoToModel(ctx, order, &notificationPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
 
@@ -201,7 +213,8 @@ func (r *NotificationPolicyResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	result, _ := NotificationPolicyDtoToModel(ctx, notificationPolicyDto)
+	order := getNotificationPolicyOrder(ctx, r.clientConfiguration, data.TeamID.ValueString(), notificationPolicyDto.ID)
+	result, _ := NotificationPolicyDtoToModel(ctx, order, notificationPolicyDto)
 	resp.Diagnostics.Append(resp.State.Set(ctx, result)...)
 }
 
@@ -255,4 +268,73 @@ func (r *NotificationPolicyResource) ImportState(ctx context.Context, req resour
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), idParts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("team_id"), idParts[1])...)
+}
+
+func getNotificationPolicyOrder(ctx context.Context, configuration dto.AtlassianOpsProviderModel, teamId string, notificationPolicyId string) float64 {
+	// list notification policies find the one we just created, and get its order value
+	listNotificationPoliciesDto := &dto.NotificationPolicyListDto{}
+	baseURL := fmt.Sprintf("/v1/teams/%s/policies", teamId)
+	queryParams := map[string]string{
+		"type": "notification",
+	}
+	var order float64
+	doneLooping := false
+
+	for !doneLooping {
+		req := httpClientHelpers.
+			GenerateJsmOpsClientRequest(configuration).
+			JoinBaseUrl(baseURL).
+			Method(httpClient.GET).
+			SetBodyParseObject(&listNotificationPoliciesDto).
+			SetQueryParams(queryParams)
+
+		httpResp, err := req.Send()
+
+		if httpResp == nil {
+			tflog.Error(ctx, "Client Error. Unable to list notification policies, got nil response")
+			return 0.0
+		}
+		if httpResp.IsError() {
+			statusCode := httpResp.GetStatusCode()
+			errorResponse := httpResp.GetErrorBody()
+			if errorResponse != nil {
+				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list notification policies, status code: %d. Got response: %s", statusCode, *errorResponse))
+			} else {
+				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list notification policies, got http response: %d", statusCode))
+			}
+			return 0.0
+		}
+		if err != nil {
+			tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to list notification policies, got error: %s", err))
+			return 0.0
+		}
+
+		for _, policy := range listNotificationPoliciesDto.Values {
+			if policy.ID == notificationPolicyId {
+				order = policy.Order
+				return order
+			}
+		}
+
+		if listNotificationPoliciesDto.Links.Next == "" {
+			doneLooping = true
+		} else {
+			nextURL := listNotificationPoliciesDto.Links.Next
+			parsedURL, err := url.Parse(nextURL)
+			if err != nil {
+				tflog.Error(ctx, fmt.Sprintf("Client Error. Unable to parse next URL, got error: %s", err))
+				return 0.0
+			}
+			urlValues := parsedURL.Query()
+			queryParams = make(map[string]string)
+			for key, values := range urlValues {
+				if len(values) > 0 {
+					queryParams[key] = values[0]
+				}
+			}
+			baseURL = parsedURL.Path
+			listNotificationPoliciesDto = &dto.NotificationPolicyListDto{}
+		}
+	}
+	return order
 }

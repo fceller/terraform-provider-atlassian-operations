@@ -62,3 +62,16 @@ type ActionDto struct {
 	Type       string                 `json:"type"`
 	Parameters map[string]interface{} `json:"parameters"`
 }
+
+type BaseAlertPolicyDto struct {
+	ID      string  `json:"id,omitempty"`
+	Type    string  `json:"type"`
+	Name    string  `json:"name"`
+	Enabled bool    `json:"enabled"`
+	Order   float64 `json:"order,omitempty"`
+}
+
+type AlertPolicyListDto struct {
+	Values []BaseAlertPolicyDto `json:"values"`
+	Links  LinksDto             `json:"links"`
+}

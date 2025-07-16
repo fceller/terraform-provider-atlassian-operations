@@ -54,7 +54,7 @@ resource "atlassian-operations_notification_policy" "test" {
   description = "Test notification policy description"
   team_id     = atlassian-operations_team.example.id
   enabled     = true
-  order       = 0.0
+  order       = 1.0
 
   filter = {
     type = "match-all-conditions"
@@ -107,7 +107,7 @@ resource "atlassian-operations_notification_policy" "test" {
 					resource.TestCheckResourceAttr("atlassian-operations_notification_policy.test", "description", "Test notification policy description"),
 					resource.TestCheckResourceAttr("atlassian-operations_notification_policy.test", "enabled", "true"),
 					resource.TestCheckResourceAttrPair("atlassian-operations_notification_policy.test", "team_id", "atlassian-operations_team.example", "id"),
-					resource.TestCheckResourceAttr("atlassian-operations_notification_policy.test", "order", "0"),
+					resource.TestCheckResourceAttr("atlassian-operations_notification_policy.test", "order", "1"),
 					resource.TestCheckResourceAttr("atlassian-operations_notification_policy.test", "filter.type", "match-all-conditions"),
 					resource.TestCheckResourceAttr("atlassian-operations_notification_policy.test", "filter.conditions.0.field", "priority"),
 					resource.TestCheckResourceAttr("atlassian-operations_notification_policy.test", "filter.conditions.0.not", "false"),

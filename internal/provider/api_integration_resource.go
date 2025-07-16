@@ -104,6 +104,15 @@ func (r *ApiIntegrationResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	if data.DeleteDefaultActions.ValueBool() {
+		// List default actions using the API Integration ID then using delete action endpoint delete each action
+		err = listDefaultActionsAndDelete(r.clientConfiguration, dtoObj.Id)
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Error deleting default actions for API integration: %s", err))
+			resp.Diagnostics.AddWarning("Error Deleting Default Actions", fmt.Sprintf("Unable to delete default actions for API integration: %s", err))
+		}
+	}
+
 	data = ApiIntegrationDtoToModel(dtoObj, data)
 
 	tflog.Trace(ctx, "Created the ApiIntegrationResource")
@@ -111,6 +120,36 @@ func (r *ApiIntegrationResource) Create(ctx context.Context, req resource.Create
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	tflog.Trace(ctx, "Saved the ApiIntegrationResource into Terraform state")
+}
+
+func listDefaultActionsAndDelete(configuration dto.AtlassianOpsProviderModel, integrationId string) error {
+	defaultActions := dto.IntegrationActionListDto{}
+	httpResp, err := httpClientHelpers.
+		GenerateJsmOpsClientRequest(configuration).
+		JoinBaseUrl(fmt.Sprintf("v1/integrations/%s/actions", integrationId)).
+		Method(httpClient.GET).
+		SetBodyParseObject(&defaultActions).
+		Send()
+	if err != nil {
+		return fmt.Errorf("unable to list default actions, got error: %s couldn't delete default actions automatically. Please delete it through UI", err)
+	}
+	if httpResp.IsError() {
+		return fmt.Errorf("unable to list default actions, couldn't delete default actions automatically, got http response: %d. Please delete it through UI", httpResp.GetStatusCode())
+	}
+	for _, action := range defaultActions.Values {
+		httpResp, err := httpClientHelpers.
+			GenerateJsmOpsClientRequest(configuration).
+			JoinBaseUrl(fmt.Sprintf("v1/integrations/%s/actions/%s", integrationId, action.ID)).
+			Method(httpClient.DELETE).
+			Send()
+		if err != nil {
+			return fmt.Errorf("unable to delete default action %s, got error: %s couldn't delete default actions automatically. Please delete it through UI", action.ID, err)
+		}
+		if httpResp.IsError() {
+			return fmt.Errorf("unable to delete default action %s, couldn't delete default actions automatically, got http response: %d. Please delete it through UI", action.Name, httpResp.GetStatusCode())
+		}
+	}
+	return nil
 }
 
 func (r *ApiIntegrationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -132,6 +171,10 @@ func (r *ApiIntegrationResource) Read(ctx context.Context, req resource.ReadRequ
 	if httpResp == nil {
 		tflog.Error(ctx, "Client Error. Unable to read api integration, got nil response")
 		resp.Diagnostics.AddError("Client Error", "Unable to read api integration, got nil response")
+	} else if httpResp.GetStatusCode() == 404 {
+		resp.State.RemoveResource(ctx)
+
+		return
 	} else if httpResp.IsError() {
 		statusCode := httpResp.GetStatusCode()
 		errorResponse := httpResp.GetErrorBody()
