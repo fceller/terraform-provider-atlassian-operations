@@ -1,3 +1,8 @@
+## v1.1.9
+
+#### Resources:
+
+Implemented Jira Service Management Service Resource
 ## v1.1.8
 
 #### Product:
