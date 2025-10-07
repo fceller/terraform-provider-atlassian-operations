@@ -208,6 +208,7 @@ func (r *TeamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	tflog.Trace(ctx, "Extra users removed from the team")
 
+/*
 	tflog.Trace(ctx, "Enabling Operations for the Team")
 	enableOpsBody := dto.TeamEnableOps{
 		TeamId:          teamDto.TeamId,
@@ -256,6 +257,7 @@ func (r *TeamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 	tflog.Trace(ctx, "Enabled Operations for the Team")
+*/
 
 	if data.DeleteDefaultResources.ValueBool() {
 		tflog.Trace(ctx, "Deleting default resources for the team")
